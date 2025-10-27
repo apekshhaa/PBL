@@ -1,33 +1,30 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-require('dotenv').config();
-
-const Campus = require('./models/campus');
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+require("dotenv").config();
 
 const app = express();
-app.use(cors());
 app.use(express.json());
+app.use(cors());
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ Connected to MongoDB'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+const Location = mongoose.model("Location", new mongoose.Schema({
+  name: String,
+  lat: Number,
+  lng: Number,
+}), "locations");
 
-// Default route
-app.get('/', (req, res) => {
-  res.send('Backend is running successfully!');
-});
-
-// GET all campus data
-app.get('/api/campus', async (req, res) => {
+app.get("/api/location/:place", async (req, res) => {
   try {
-    const data = await Campus.find();
-    res.json(data);
+    const placeName = req.params.place.toLowerCase();
+    const location = await Location.findOne({ name: { $regex: placeName, $options: "i" } });
+    if (!location) return res.status(404).json({ message: "Location not found" });
+    res.json(location);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
+
+app.listen(5000, () => console.log("Server running on port 5000"));
 
 // POST new campus data (optional)
 app.post('/api/campus', async (req, res) => {

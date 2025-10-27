@@ -71,6 +71,8 @@ import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Results from "./pages/Results";
+import NetworkCoverage from "./pages/NetworkCoverage";
+import MapView from "./components/MapView";
 
 function App() {
   return (
@@ -88,7 +90,9 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
-          <Route path="/results" element={<Results />} />
+          {/* You can use Results OR MapView depending on what you want */}
+          <Route path="/results" element={<MapView />} />
+          <Route path="/network" element={<NetworkCoverage />} />
         </Routes>
       </div>
     </div>
@@ -96,7 +100,6 @@ function App() {
 }
 
 export default App;
-
 
 
 
