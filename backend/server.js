@@ -1,25 +1,24 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-require("dotenv").config();
 
-const Location = require("./models/location")
+const Location = require("./models/location");
 const Campus = require("./models/campus"); // optional if using signal data
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-// ✅ Connect to MongoDB
+// ✅ Connect directly to your MongoDB (local Compass connection)
 mongoose
-  .connect(process.env.MONGO_URI || "mongodb://localhost:27017/nodeDB", {
+  .connect("mongodb://127.0.0.1:27017/mapDB", {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+  .then(() => console.log("✅ Connected to MongoDB: mapDB"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-// ✅ Fetch all locations for map
+// ✅ Route: Get all locations
 app.get("/api/locations", async (req, res) => {
   try {
     const locations = await Location.find();
@@ -29,22 +28,23 @@ app.get("/api/locations", async (req, res) => {
   }
 });
 
-// ✅ Fetch a single location by name (for search)
+// ✅ Route: Get a single location by name (search)
 app.get("/api/location/:place", async (req, res) => {
   try {
     const placeName = req.params.place.toLowerCase();
     const location = await Location.findOne({
-      name: { $regex: placeName, $options: "i" },
+      areaName: { $regex: placeName, $options: "i" },
     });
-    if (!location)
+    if (!location) {
       return res.status(404).json({ message: "Location not found" });
+    }
     res.json(location);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// ✅ Optional: Add new campus data
+// ✅ Route: Add a new campus signal record (optional)
 app.post("/api/campus", async (req, res) => {
   const { location, signalStrength, provider } = req.body;
   try {
@@ -56,5 +56,9 @@ app.post("/api/campus", async (req, res) => {
   }
 });
 
+// ✅ Start the server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log("🌍 API Endpoint available at: http://localhost:5000/api/locations");
+});

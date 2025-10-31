@@ -12,12 +12,21 @@ export default function MapView({ destination }) {
   const [currentLocation, setCurrentLocation] = React.useState(null);
   const [destinationLocation, setDestinationLocation] = React.useState(null);
   const [routeData, setRouteData] = React.useState(null);
+  const [locations, setLocations] = React.useState([]); // fetch from backend
 
-  const campusLocations = {
-    library: { lat: 12.9102945, lng: 74.8997661 },
-    cafeteria: { lat: 12.9241, lng: 74.8578 },
-    auditorium: { lat: 12.9239, lng: 74.8583 },
-  };
+  // Fetch locations from backend
+  React.useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/locations");
+        const data = await res.json();
+        setLocations(data); // expect [{name:"library", lat:12.9, lng:74.89}, ...]
+      } catch (error) {
+        console.error("Error fetching locations:", error);
+      }
+    };
+    fetchLocations();
+  }, []);
 
   // Get user’s current location
   React.useEffect(() => {
@@ -36,33 +45,34 @@ export default function MapView({ destination }) {
 
   // Set destination when user types a known location
   React.useEffect(() => {
-    if (destination && campusLocations[destination.toLowerCase()]) {
-      const loc = campusLocations[destination.toLowerCase()];
-      setDestinationLocation(loc);
-      setViewState({
-        ...viewState,
-        longitude: loc.lng,
-        latitude: loc.lat,
-      });
+    if (destination && locations.length > 0) {
+      const loc = locations.find(
+        (l) => l.name.toLowerCase() === destination.toLowerCase()
+      );
+      if (loc) {
+        setDestinationLocation({ lat: loc.lat, lng: loc.lng });
+        setViewState({
+          ...viewState,
+          longitude: loc.lng,
+          latitude: loc.lat,
+        });
+      }
     }
-  }, [destination]);
+  }, [destination, locations]);
 
   // Fetch route from OpenRouteService
   React.useEffect(() => {
     const fetchRoute = async () => {
       if (!currentLocation || !destinationLocation) return;
-
       const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6Ijg0NTZkNzA1MGEzZTRiY2I4NTZlNWI0YTdhNTg3N2QxIiwiaCI6Im11cm11cjY0In0=&start=${currentLocation.lng},${currentLocation.lat}&end=${destinationLocation.lng},${destinationLocation.lat}`;
       const res = await fetch(url);
       const data = await res.json();
-
       const coords = data.features[0].geometry.coordinates;
       setRouteData({
         type: "Feature",
         geometry: { type: "LineString", coordinates: coords },
       });
     };
-
     fetchRoute();
   }, [currentLocation, destinationLocation]);
 
@@ -85,6 +95,16 @@ export default function MapView({ destination }) {
         {destinationLocation && (
           <Marker longitude={destinationLocation.lng} latitude={destinationLocation.lat} color="red" />
         )}
+
+        {/* All campus markers */}
+        {locations.map((loc) => (
+          <Marker
+            key={loc.name}
+            longitude={loc.lng}
+            latitude={loc.lat}
+            color="orange"
+          />
+        ))}
 
         {/* Route line */}
         {routeData && (
