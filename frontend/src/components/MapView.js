@@ -9,29 +9,55 @@ export default function MapView({ destination }) {
   const routingControlRef = useRef(null);
 
   useEffect(() => {
-    // Initialize the map
-    mapRef.current = L.map("map").setView([12.9102945, 74.8997661], 17);
+    // Initialize map
+    mapRef.current = L.map("map").setView([12.9103, 74.8998], 17);
 
-    // Add map tiles (hybrid/satellite style)
+    // Add OpenStreetMap tiles for background
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
       attribution: "© OpenStreetMap contributors",
+      maxZoom: 20,
     }).addTo(mapRef.current);
+
+    // Load SJEC GeoJSON overlay
+    fetch("/sjec-campus.geojson")
+      .then((res) => res.json())
+      .then((geoData) => {
+        L.geoJSON(geoData, {
+          style: {
+            color: "#0077b6",
+            weight: 2,
+            fillColor: "#90e0ef",
+            fillOpacity: 0.3,
+          },
+        }).addTo(mapRef.current);
+      });
 
     return () => {
       mapRef.current.remove();
     };
   }, []);
 
+  // Handle routing when destination is available
   useEffect(() => {
     if (!destination) return;
 
-    // Get user's current location
+    // Get user’s current location
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const userLatLng = L.latLng(pos.coords.latitude, pos.coords.longitude);
 
-        // Fetch location data from your backend
+        // Add marker for current position
+        L.marker(userLatLng, {
+          icon: L.icon({
+            iconUrl: "https://cdn-icons-png.flaticon.com/512/64/64113.png",
+            iconSize: [35, 35],
+          }),
+        })
+          .addTo(mapRef.current)
+          .bindPopup("You are here")
+          .openPopup();
+
+        // Get destination coordinates from backend
         fetch("http://localhost:5000/api/locations")
           .then((res) => res.json())
           .then((locations) => {
@@ -46,48 +72,40 @@ export default function MapView({ destination }) {
 
             const destLatLng = L.latLng(dest.lat, dest.lng);
 
+            // Add marker for destination
+            L.marker(destLatLng, {
+              icon: L.icon({
+                iconUrl: "https://cdn-icons-png.flaticon.com/512/854/854878.png",
+                iconSize: [35, 35],
+              }),
+            })
+              .addTo(mapRef.current)
+              .bindPopup(dest.name);
+
             // Remove previous route (if any)
             if (routingControlRef.current) {
               mapRef.current.removeControl(routingControlRef.current);
             }
 
-            // Add route between current and destination
+            // Add routing path
             routingControlRef.current = L.Routing.control({
               waypoints: [userLatLng, destLatLng],
+              lineOptions: {
+                styles: [{ color: "#007bff", weight: 5, opacity: 0.8 }],
+              },
+              createMarker: () => null, // Hide default markers
               routeWhileDragging: false,
               showAlternatives: false,
-              lineOptions: {
-                styles: [
-                  { color: "#007bff", weight: 6, opacity: 0.8 },
-                  { color: "white", weight: 2, opacity: 0.6 },
-                ],
-              },
-              createMarker: (i, waypoint, n) => {
-                if (i === 0) {
-                  return L.marker(waypoint.latLng, {
-                    icon: L.icon({
-                      iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
-                      iconSize: [35, 35],
-                    }),
-                  }).bindPopup("You are here");
-                } else if (i === n - 1) {
-                  return L.marker(waypoint.latLng, {
-                    icon: L.icon({
-                      iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
-                      iconSize: [35, 35],
-                    }),
-                  }).bindPopup(dest.name);
-                }
-                return null;
-              },
             }).addTo(mapRef.current);
 
-            // Fit the map bounds to the route
+            // Zoom to the area
             mapRef.current.fitBounds([userLatLng, destLatLng]);
-          })
-          .catch((err) => console.error("Error fetching locations:", err));
+          });
       },
-      (err) => console.error("Geolocation error:", err)
+      (err) => {
+        console.error("Geolocation error:", err);
+        alert("Unable to fetch your current location.");
+      }
     );
   }, [destination]);
 
