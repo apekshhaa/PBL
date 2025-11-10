@@ -1,125 +1,95 @@
-import * as React from "react";
-import Map, { Marker, NavigationControl, Source, Layer } from "@vis.gl/react-maplibre";
-import "maplibre-gl/dist/maplibre-gl.css";
+import React, { useEffect, useRef } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
+import "leaflet-routing-machine";
 
 export default function MapView({ destination }) {
-  const [viewState, setViewState] = React.useState({
-    longitude: 74.8997661,
-    latitude: 12.9102945,
-    zoom: 14,
-  });
+  const mapRef = useRef(null);
+  const routingControlRef = useRef(null);
 
-  const [currentLocation, setCurrentLocation] = React.useState(null);
-  const [destinationLocation, setDestinationLocation] = React.useState(null);
-  const [routeData, setRouteData] = React.useState(null);
-  const [locations, setLocations] = React.useState([]); // fetch from backend
+  useEffect(() => {
+    // Initialize the map
+    mapRef.current = L.map("map").setView([12.9102945, 74.8997661], 17);
 
-  // Fetch locations from backend
-  React.useEffect(() => {
-    const fetchLocations = async () => {
-      try {
-        const res = await fetch("http://localhost:5000/api/locations");
-        const data = await res.json();
-        setLocations(data); // expect [{name:"library", lat:12.9, lng:74.89}, ...]
-      } catch (error) {
-        console.error("Error fetching locations:", error);
-      }
+    // Add map tiles (hybrid/satellite style)
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "© OpenStreetMap contributors",
+    }).addTo(mapRef.current);
+
+    return () => {
+      mapRef.current.remove();
     };
-    fetchLocations();
   }, []);
 
-  // Get user’s current location
-  React.useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setCurrentLocation({
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-          });
-        },
-        (err) => console.error("Geolocation error:", err)
-      );
-    }
-  }, []);
+  useEffect(() => {
+    if (!destination) return;
 
-  // Set destination when user types a known location
-  React.useEffect(() => {
-    if (destination && locations.length > 0) {
-      const loc = locations.find(
-        (l) => l.name.toLowerCase() === destination.toLowerCase()
-      );
-      if (loc) {
-        setDestinationLocation({ lat: loc.lat, lng: loc.lng });
-        setViewState({
-          ...viewState,
-          longitude: loc.lng,
-          latitude: loc.lat,
-        });
-      }
-    }
-  }, [destination, locations]);
+    // Get user's current location
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const userLatLng = L.latLng(pos.coords.latitude, pos.coords.longitude);
 
-  // Fetch route from OpenRouteService
-  React.useEffect(() => {
-    const fetchRoute = async () => {
-      if (!currentLocation || !destinationLocation) return;
-      const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6Ijg0NTZkNzA1MGEzZTRiY2I4NTZlNWI0YTdhNTg3N2QxIiwiaCI6Im11cm11cjY0In0=&start=${currentLocation.lng},${currentLocation.lat}&end=${destinationLocation.lng},${destinationLocation.lat}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      const coords = data.features[0].geometry.coordinates;
-      setRouteData({
-        type: "Feature",
-        geometry: { type: "LineString", coordinates: coords },
-      });
-    };
-    fetchRoute();
-  }, [currentLocation, destinationLocation]);
+        // Fetch location data from your backend
+        fetch("http://localhost:5000/api/locations")
+          .then((res) => res.json())
+          .then((locations) => {
+            const dest = locations.find(
+              (l) => l.name.toLowerCase() === destination.toLowerCase()
+            );
 
-  return (
-    <div style={{ height: "100vh", width: "100%" }}>
-      <Map
-        mapLib={import("maplibre-gl")}
-        mapStyle="https://api.maptiler.com/maps/hybrid/style.json?key=TeDf5lZkkOzJucqs5tog"
-        initialViewState={viewState}
-        style={{ width: "100%", height: "100vh" }}
-      >
-        <NavigationControl position="top-left" />
+            if (!dest) {
+              alert("Destination not found in database!");
+              return;
+            }
 
-        {/* User marker */}
-        {currentLocation && (
-          <Marker longitude={currentLocation.lng} latitude={currentLocation.lat} color="blue" />
-        )}
+            const destLatLng = L.latLng(dest.lat, dest.lng);
 
-        {/* Destination marker */}
-        {destinationLocation && (
-          <Marker longitude={destinationLocation.lng} latitude={destinationLocation.lat} color="red" />
-        )}
+            // Remove previous route (if any)
+            if (routingControlRef.current) {
+              mapRef.current.removeControl(routingControlRef.current);
+            }
 
-        {/* All campus markers */}
-        {locations.map((loc) => (
-          <Marker
-            key={loc.name}
-            longitude={loc.lng}
-            latitude={loc.lat}
-            color="orange"
-          />
-        ))}
+            // Add route between current and destination
+            routingControlRef.current = L.Routing.control({
+              waypoints: [userLatLng, destLatLng],
+              routeWhileDragging: false,
+              showAlternatives: false,
+              lineOptions: {
+                styles: [
+                  { color: "#007bff", weight: 6, opacity: 0.8 },
+                  { color: "white", weight: 2, opacity: 0.6 },
+                ],
+              },
+              createMarker: (i, waypoint, n) => {
+                if (i === 0) {
+                  return L.marker(waypoint.latLng, {
+                    icon: L.icon({
+                      iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
+                      iconSize: [35, 35],
+                    }),
+                  }).bindPopup("You are here");
+                } else if (i === n - 1) {
+                  return L.marker(waypoint.latLng, {
+                    icon: L.icon({
+                      iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
+                      iconSize: [35, 35],
+                    }),
+                  }).bindPopup(dest.name);
+                }
+                return null;
+              },
+            }).addTo(mapRef.current);
 
-        {/* Route line */}
-        {routeData && (
-          <Source id="route" type="geojson" data={routeData}>
-            <Layer
-              id="route-line"
-              type="line"
-              paint={{
-                "line-color": "#FF5733",
-                "line-width": 4,
-              }}
-            />
-          </Source>
-        )}
-      </Map>
-    </div>
-  );
+            // Fit the map bounds to the route
+            mapRef.current.fitBounds([userLatLng, destLatLng]);
+          })
+          .catch((err) => console.error("Error fetching locations:", err));
+      },
+      (err) => console.error("Geolocation error:", err)
+    );
+  }, [destination]);
+
+  return <div id="map" style={{ height: "100vh", width: "100%" }}></div>;
 }

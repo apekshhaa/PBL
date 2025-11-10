@@ -90,8 +90,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
-          {/* You can use Results OR MapView depending on what you want */}
-          <Route path="/results" element={<MapView />} />
+          <Route path="/results" element={<Results />} />
           <Route path="/network" element={<NetworkCoverage />} />
         </Routes>
       </div>
