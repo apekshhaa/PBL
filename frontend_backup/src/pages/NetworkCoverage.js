@@ -10,6 +10,7 @@ function NetworkCoverage() {
       .then((info) => {
         setData(info);
 
+        // find the strongest network spot (assuming each has a 'strength' field)
         const bestSpot = info.reduce((max, curr) =>
           curr.strength > max.strength ? curr : max
         );

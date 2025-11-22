@@ -1,0 +1,30 @@
+.scroll-float{
+  display:block;
+  overflow:hidden;
+  width:100%;
+  text-align:center;
+}
+
+.scroll-float-text {
+  display:inline-block;
+  font-weight:700;
+  letter-spacing:0.01em;
+  color: #e6d9ff;
+}
+
+.char {
+  display:inline-block;
+  transform-origin: 50% 0;
+  will-change: transform, opacity;
+}
+
+.home-heading {
+  margin-top: 12px;
+  margin-bottom: 8px;
+}
+
+.home-heading-text {
+  font-size: clamp(18px, 2.2vw, 28px);
+  color: #e6d9ff;
+  letter-spacing: 0.01em;
+}

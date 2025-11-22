@@ -1,0 +1,282 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+
+/* EXTRA CODE */
+/* Background */
+/* body {
+  margin: 0;
+  font-family: 'Arial', sans-serif;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center; 
+  padding: 15px 40px;
+  background: rgba(0, 0, 0, 0.6);
+  position: fixed;
+  width: 100%;
+  top: 0;
+  z-index: 10;
+  flex-wrap: wrap; 
+}
+
+.college-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: #ffd700;
+  flex-shrink: 0; 
+}
+
+.nav-links {
+  display: flex;
+  gap: 30px; 
+}
+
+.nav-links a {
+  margin-left: 0px;
+  text-decoration: none;
+  font-weight: bold;
+  color: white;
+  white-space: nowrap; 
+}
+
+.nav-links a:hover {
+  color: #00ffff;
+}
+
+.home {
+  text-align: center;
+}
+
+.main-title {
+  font-size: 3rem;
+  font-weight: bold;
+  color: #ff69b4;
+  text-shadow: 2px 2px 8px black;
+  margin-top: 20px;
+}
+
+.chatbox {
+  margin-top: 40px;
+}
+
+.chat-question {
+  font-size: 1.3rem;
+  margin-bottom: 10px;
+}
+
+.chatbox input {
+  padding: 12px;
+  width: 60%;
+  border-radius: 25px;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+}
+
+.suggestions {
+  margin-top: 40px;
+}
+
+.suggestions ul {
+  list-style: none;
+  padding: 0;
+}
+
+.suggestions li {
+  display: inline-block;
+  margin: 10px;
+  padding: 10px 20px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+.suggestions li:hover {
+  background: #00ffff;
+  color: black;
+}
+
+.about, .results {
+  margin: 40px auto;
+  padding: 20px;
+  max-width: 800px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 15px;
+}
+
+
+.selected-image {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+ */
+
+ /* Body and Background */
+body {
+  margin: 0;
+  font-family: 'Arial', sans-serif;
+  background: url('./images/bgS.jpeg') no-repeat center center fixed;
+  background-size: cover;
+  color: white;
+}
+
+
+
+/* Navbar */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 40px;
+  background: rgba(0,0,0,0.6);
+  position: fixed;
+  width: 100%;
+  top: 0;
+  z-index: 1000;
+   box-sizing: border-box; /* ensures padding doesn't overflow */
+  flex-wrap: wrap; /* allows wrapping on small screens */
+}
+
+.college-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: #ffd700;
+  flex-shrink: 0;
+}
+
+.nav-links {
+  display: flex;
+  gap: 30px; /* space between links */
+}
+
+.nav-links a {
+  text-decoration: none;
+  font-weight: bold;
+  color: white;
+  white-space: nowrap;
+}
+
+.nav-links a:hover {
+  /* color: #00ffff; */
+  color:lightsalmon;
+}
+
+/* Home Page */
+.home {
+  text-align: center;
+  margin-top: 120px; /* push below fixed navbar */
+}
+
+.main-title {
+  font-size: 3rem;
+  font-weight: bold;
+  /* color: #ff69b4; */
+  color:aliceblue;
+  text-shadow: 2px 2px 8px black;
+}
+
+/* Chatbox */
+.chatbox {
+  margin-top: 40px;
+}
+
+.chat-question {
+  font-size: 1.4rem;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.chatbox input {
+  padding: 12px;
+  width: 60%;
+  border-radius: 25px;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+}
+
+/* Suggestions */
+.suggestions {
+  margin-top: 40px;
+}
+
+.suggestions ul {
+  list-style: none;
+  padding: 0;
+}
+
+.suggestions li {
+  display: inline-block;
+  margin: 10px;
+  padding: 10px 20px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+.suggestions li:hover {
+  background: #00ffff;
+  color: black;
+}
+
+/* Selected Image */
+.selected-image {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.selected-image img {
+  width: 60%;
+  border-radius: 15px;
+}
+
+/* About & Results */
+.about, .results {
+  margin: 120px auto;
+  padding: 20px;
+  max-width: 800px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 15px;
+}

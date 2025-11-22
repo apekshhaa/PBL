@@ -1,26 +1,45 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-function ChatBox() {
-  const [input, setInput] = useState("");
+
+function ChatBox({ placeholder = "Type your destination...", value, onChange, onSubmit }) {
+  const [input, setInput] = useState(value ?? "");
   const navigate = useNavigate();
 
+  // Keep input in sync with parent value
+  React.useEffect(() => {
+    if (value !== undefined && value !== input) setInput(value);
+  }, [value]);
+
+  const submit = () => {
+    const q = (value !== undefined ? value : input).trim();
+    if (q === "") return;
+    if (onSubmit) onSubmit(q);
+    else navigate("/results", { state: { query: q } });
+  };
+
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && input.trim() !== "") {
-      navigate("/results", { state: { query: input } });
-    }
+    if (e.key === "Enter") submit();
+  };
+
+  const handleChange = (e) => {
+    setInput(e.target.value);
+    if (onChange) onChange(e.target.value);
   };
 
   return (
     <div className="chatbox">
-      <p className="chat-question">Hello, Where do you want to go today?</p>
-      <input
-        type="text"
-        placeholder="Type your destination..."
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={handleKeyDown}
-      />
+      <div className="chatbox-inner">
+        <input
+          className="search-input"
+          type="text"
+          placeholder={placeholder}
+          value={value !== undefined ? value : input}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+        />
+        <button className="search-btn" onClick={submit} aria-label="Search">Search</button>
+      </div>
     </div>
   );
 }

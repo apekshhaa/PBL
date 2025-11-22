@@ -73,37 +73,15 @@ export default function MapView({ destination }) {
   const routingControlRef = useRef(null);
   const [status, setStatus] = useState("Ready");
   const [loading, setLoading] = useState(false);
-  const [routeInfo, setRouteInfo] = useState(null);
 
   useEffect(() => {
     // Initialize map once
     mapRef.current = L.map("map", { zoomControl: true }).setView([12.9103, 74.8998], 17);
 
-    // Primary tile provider (OpenStreetMap) with a fallback to Carto if too many tile errors occur
-    const osmUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-    const cartoUrl = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png";
-    let tileErrorCount = 0;
-    const tileErrorThreshold = 20; // after this many failed tiles, switch provider
-
-    const tileLayer = L.tileLayer(osmUrl, {
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "© OpenStreetMap contributors",
       maxZoom: 20,
     }).addTo(mapRef.current);
-    const tileLayerRef = { current: tileLayer };
-
-    tileLayer.on("tileerror", (e) => {
-      tileErrorCount += 1;
-      // console.warn('Tile error', e);
-      if (tileErrorCount >= tileErrorThreshold) {
-        try {
-          if (mapRef.current && tileLayerRef.current) mapRef.current.removeLayer(tileLayerRef.current);
-        } catch (err) {
-          /* ignore */
-        }
-        if (mapRef.current) L.tileLayer(cartoUrl, { attribution: "© Carto", maxZoom: 20 }).addTo(mapRef.current);
-        setStatus("Switched to fallback tile provider (Carto)");
-      }
-    });
 
     // Try to load local SJEC GeoJSON overlay (optional)
     (async () => {
@@ -123,24 +101,8 @@ export default function MapView({ destination }) {
     return () => {
       // Clean up map and routing control
       try {
-        // remove tile listeners first
-        try {
-          if (tileLayerRef.current) {
-            tileLayerRef.current.off && tileLayerRef.current.off('tileerror');
-          }
-        } catch (err) {}
-
         if (routingControlRef.current && mapRef.current) {
-          try {
-            // try to remove any attached routefound listeners safely
-            if (routingControlRef.current._container && routingControlRef.current.off) {
-              // best-effort: remove all listeners named routesfound
-              try { routingControlRef.current.off('routesfound'); } catch (e) {}
-            }
-            mapRef.current.removeControl(routingControlRef.current);
-          } catch (e) {
-            // ignore
-          }
+          mapRef.current.removeControl(routingControlRef.current);
           routingControlRef.current = null;
         }
         if (mapRef.current) {
@@ -219,24 +181,6 @@ export default function MapView({ destination }) {
           showAlternatives: false,
         }).addTo(mapRef.current);
 
-        // When routes are found, display a small summary (distance/time)
-        const onRoutesFound = (e) => {
-          try {
-            const r = e.routes && e.routes[0];
-            if (!r || !r.summary) return;
-            // distance in meters, time in seconds
-            const meters = r.summary.totalDistance || r.summary.total_distance || 0;
-            const seconds = r.summary.totalTime || r.summary.total_time || r.summary.totalDuration || 0;
-            const km = (meters / 1000).toFixed(2);
-            const mins = Math.round(seconds / 60);
-            setRouteInfo({ distanceKm: km, minutes: mins });
-          } catch (err) {
-            // ignore parsing errors
-          }
-        };
-
-        routingControlRef.current.on("routesfound", onRoutesFound);
-
         mapRef.current.fitBounds([userLatLng, destLatLng], { padding: [60, 60] });
         setStatus("Route ready");
       } catch (err) {
@@ -262,11 +206,6 @@ export default function MapView({ destination }) {
       <div style={styles.overlay}>
         <div style={{ fontWeight: 600 }}>{destination ? `Destination: ${destination}` : "Map"}</div>
         <div style={{ fontSize: 12, marginTop: 6, color: "#666" }}>{status}</div>
-        {routeInfo && (
-          <div style={{ marginTop: 8, fontSize: 12, color: "#333" }}>
-            <strong>Route:</strong> {routeInfo.distanceKm} km • {routeInfo.minutes} min
-          </div>
-        )}
       </div>
 
       {loading && (

@@ -1,0 +1,187 @@
+.scroll-list-container {
+  position: relative;
+  /* Responsive: allow the container to fill available space but cap it for very wide layouts */
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.scroll-list {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.scroll-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scroll-list::-webkit-scrollbar-track {
+  background: #060010;
+}
+
+.scroll-list::-webkit-scrollbar-thumb {
+  background: #271e37;
+  border-radius: 4px;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.item {
+  padding: 16px;
+  background-color: #170d27;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.item.selected {
+  background-color: #271e37;
+}
+
+.item-text {
+  color: white;
+  margin: 0;
+}
+
+/* Horizontal pill list styles */
+.pill-list {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  /* allow wrapping so long labels wrap to the next line (stack) instead of being clipped */
+  flex-wrap: wrap;
+  overflow-x: auto;
+  padding: 12px 8px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(120,48,255,0.12), rgba(80,20,180,0.08));
+  border: 1px solid rgba(160,80,255,0.18);
+  /* allow the pill to size to content and avoid internal truncation */
+  min-width: min-content;
+  white-space: nowrap; /* keep label on one line inside the pill */
+}
+
+/* Prevent pills from shrinking and allow responsive wrapping/stacking */
+.pill {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.pill-text {
+  color: #f3eaff;
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+  /* Allow wrapping inside the pill on small screens so long names are visible */
+  white-space: normal;
+  word-break: break-word;
+}
+
+@media (max-width: 600px) {
+  /* On narrow screens, allow two pills per row so labels don't get clipped */
+  .pill-list {
+    justify-content: flex-start;
+  }
+  .pill {
+    flex: 1 1 calc(50% - 12px);
+    box-sizing: border-box;
+    white-space: normal;
+    padding: 8px 10px;
+  }
+}
+
+@media (min-width: 601px) and (max-width: 920px) {
+  .pill {
+    flex: 0 1 auto;
+  }
+}
+
+.pill.selected {
+  background: linear-gradient(180deg, rgba(160,80,255,0.22), rgba(110,40,230,0.12));
+  box-shadow: 0 6px 18px rgba(128,72,255,0.12);
+}
+
+.pill-text {
+  color: #f3eaff;
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+  /* ensure long labels are visible; allow overflow to show via wrapping of pills instead */
+  white-space: nowrap;
+}
+
+/* Ensure vertical list keeps the same fade/spacing behavior */
+.scroll-list {
+  width: 100%;
+}
+
+/* reveal animation */
+.fade-up {
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+  transition: opacity 280ms ease, transform 320ms cubic-bezier(.2,.9,.2,1);
+}
+.fade-up.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.top-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  background: linear-gradient(to bottom, #060010, transparent);
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.bottom-gradient {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100px;
+  background: linear-gradient(to top, #060010, transparent);
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+/* Prevent disappearing on hover: if the reveal animation temporarily hides items,
+   ensure hovering or focusing keeps them visible and in-place. Applies to both
+   horizontal pills and vertical items. */
+.pill:hover,
+.pill:focus,
+.pill:focus-within {
+  opacity: 1 !important;
+  transform: translateY(0) scale(1) !important;
+}
+
+.item:hover,
+.item:focus,
+.item:focus-within {
+  opacity: 1 !important;
+  transform: translateY(0) scale(1) !important;
+}
+
+/* Improve keyboard accessibility focus outline for pills/items */
+.pill:focus,
+.item:focus {
+  outline: 2px solid rgba(160,80,255,0.16);
+  outline-offset: 3px;
+}

@@ -27,9 +27,6 @@ export default App;
 
 /*import React from "react";
 import { Routes, Route } from "react-router-dom";
-import Background from "./components/Background";
-import Background from "./components/Background";
-import Background from "./components/Background";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import About from "./pages/About";
@@ -71,26 +68,23 @@ export default App;
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
-// import Background from "./components/Background";
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Results from "./pages/Results";
 import NetworkCoverage from "./pages/NetworkCoverage";
+import MapView from "./components/MapView";
 
 function App() {
   return (
     <div
       style={{
         minHeight: "100vh",
-        width: "100vw",
-        margin: 0,
+        width: "100%",
         display: "flex",
         flexDirection: "column",
         color: "white",
-        backgroundColor: "#000",
       }}
     >
-      {/* <Background /> */}
       <Navbar />
       <div style={{ flex: 1, paddingTop: "80px" }}>
         <Routes>
