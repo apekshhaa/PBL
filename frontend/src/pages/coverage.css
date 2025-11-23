@@ -1,0 +1,108 @@
+
+.coverage-container {
+  text-align: center;
+  padding: 30px;
+}
+
+/*.coverage-title {
+  color: #ffffff;
+  font-size: 28px;
+  margin-bottom: 20px;
+  font-weight: 700;
+}*/
+
+.coverage-title {
+  text-align: center;
+  width: 100%;
+  margin-top: 20px;
+  font-size: 32px;
+  font-weight: bold;
+}
+
+
+.button-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 300px;
+  margin: auto;
+}
+
+.place-button {
+  padding: 12px;
+  background: #302b63;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.place-button:hover {
+  background: #413f8f;
+  transform: scale(1.03);
+}
+
+.coverage-card {
+  margin-top: 30px;
+  padding: 25px;
+  background: #1e1e2f;
+  border-radius: 12px;
+  width: 80%;
+  max-width: 550px;
+  margin-left: auto;
+  margin-right: auto;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.sim-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.sim-box {
+  padding: 15px;
+  border-radius: 10px;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+}
+
+.green { background-color: #00a86b; }
+.yellow { background-color: #c6a700; }
+.red { background-color: #d64545; }
+
+.sim-name {
+  display: block;
+  font-size: 20px;
+}
+
+.sim-strength {
+  display: block;
+  margin-top: 6px;
+  opacity: 0.9;
+}
+
+.button-grid {
+  display: flex;
+  justify-content: center;
+  gap: 60px;
+  margin-top: 20px;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Make buttons slightly smaller to fit better */
+.place-button {
+  padding: 10px 12px;
+  font-size: 17px;
+  width: 200px;
+}

@@ -1,0 +1,41 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "library_floor1", "type": "floor", "floor": 1 },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [74.8989, 12.91045],
+            [74.8989, 12.91105],
+            [74.89945, 12.91105],
+            [74.89945, 12.91045],
+            [74.8989, 12.91045]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "library_entrance", "type": "door", "room": "entrance" },
+      "geometry": { "type": "Point", "coordinates": [74.89905, 12.91055] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "library_corridor", "type": "corridor" },
+      "geometry": { "type": "LineString", "coordinates": [[74.89905,12.91055],[74.8992,12.9108],[74.8991,12.91095]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "reading_room", "type": "room" },
+      "geometry": { "type": "Point", "coordinates": [74.8992,12.9109] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "stacks", "type": "room" },
+      "geometry": { "type": "Point", "coordinates": [74.8993,12.9106] }
+    }
+  ]
+}

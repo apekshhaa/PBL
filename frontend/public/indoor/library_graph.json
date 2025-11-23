@@ -1,0 +1,14 @@
+{
+  "nodes": [
+    { "id": "n1", "name": "entrance", "coord": [74.89905, 12.91055] },
+    { "id": "n2", "name": "corridor_mid", "coord": [74.8992, 12.9108] },
+    { "id": "n3", "name": "reading_room", "coord": [74.8992, 12.9109] },
+    { "id": "n4", "name": "stacks", "coord": [74.8993, 12.9106] }
+  ],
+  "edges": [
+    { "from": "n1", "to": "n2", "weight": 0.03 },
+    { "from": "n2", "to": "n3", "weight": 0.015 },
+    { "from": "n2", "to": "n4", "weight": 0.025 },
+    { "from": "n4", "to": "n1", "weight": 0.02 }
+  ]
+}

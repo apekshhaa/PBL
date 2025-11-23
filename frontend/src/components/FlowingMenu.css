@@ -1,0 +1,166 @@
+.menu-wrap {
+  /* stretch the menu to full viewport width while staying centered in the page
+     even if it's placed inside a centered container */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding: 0 18px;
+  /* allow popovers to overflow the wrap so the floating Folder isn't clipped */
+  overflow: visible;
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  align-items: stretch;
+  width: 100%;
+}
+
+.menu__item {
+  position: relative;
+  /* allow overflow so floating popovers aren't clipped */
+  overflow: visible;
+  text-align: center;
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: none; /* allow full width */
+  height: 140px; /* taller items for a longer menu */
+  border-radius: 0; /* remove rounded corners to feel edge-to-edge */
+  background: linear-gradient(180deg, rgba(18,6,30,0.6), rgba(12,4,18,0.9));
+  box-shadow: none;
+}
+
+.menu__folder-wrap {
+  position: relative;
+  display: flex;
+  justify-content: flex-start;
+  padding: 12px 18px 18px 18px;
+  background: transparent;
+}
+.menu__folder-wrap .folder {
+  transform: none;
+}
+.menu__folder-wrap.visible {
+  /* no-op: container visible when Folder mounted */
+}
+
+/* Popover styling for folder */
+.menu__folder-popover {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translate(-50%, 8px) scale(0.96);
+  min-width: 280px;
+  max-width: 480px;
+  z-index: 60;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+  display: flex;
+  justify-content: center;
+}
+.menu__folder-popover.visible {
+  opacity: 1;
+  transform: translate(-50%, 12px) scale(1);
+}
+.menu__folder-popover .folder {
+  box-shadow: 0 18px 48px rgba(4,2,14,0.6);
+}
+
+.menu__item-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  position: relative;
+  cursor: pointer;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  font-weight: 700;
+  color: #f3eaff;
+  font-size: 1rem;
+  z-index: 3;
+  padding: 0 12px;
+}
+
+.menu__item-link:hover {
+  color: #fff;
+}
+
+.marquee {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: transparent;
+  transform: translate3d(0, 101%, 0);
+}
+
+.marquee__inner-wrap {
+  height: 100%;
+  width: 200%;
+  display: flex;
+  transform: translateX(0);
+}
+
+.marquee__inner {
+  display: flex;
+  align-items: center;
+  position: relative;
+  height: 100%;
+  width: 200%;
+  will-change: transform;
+  animation: marquee 14s linear infinite;
+}
+
+.marquee span {
+  color: rgba(255,255,255,0.95);
+  white-space: nowrap;
+  text-transform: uppercase;
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.2;
+  padding: 0 12px;
+}
+
+.marquee__img {
+  width: 220px;
+  height: calc(100% - 20px);
+  margin: 10px 14px;
+  border-radius: 10px;
+  background-size: cover; /* crop to fill */
+  background-position: center center;
+  filter: saturate(1) contrast(0.95) brightness(0.88);
+  box-shadow: 0 8px 26px rgba(0,0,0,0.55);
+}
+
+.menu__item:hover .marquee {
+  transform: translate3d(0, 0%, 0);
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (max-width: 920px) {
+  .menu__item { max-width: 100%; height: 120px; }
+  .marquee__img { width: 160px; height: calc(100% - 16px); }
+}
+
+@media (max-width: 640px) {
+  .menu__item { height: 110px; }
+  .marquee__img { width: 120px; height: calc(100% - 12px); }
+}

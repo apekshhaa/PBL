@@ -1,0 +1,21 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "SJEC Campus Boundary" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [74.89688, 12.908667],
+            [74.9012307, 12.908667],
+            [74.9012307, 12.9120086],
+            [74.89688, 12.9120086],
+            [74.89688, 12.908667]
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "library", "type": "building" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [74.89911,12.91065],[74.89911,12.91075],[74.89921,12.91075],[74.89921,12.91065],[74.89911,12.91065]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "cafe", "type": "building" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [74.89947,12.91111],[74.89947,12.91123],[74.89958,12.91123],[74.89958,12.91111],[74.89947,12.91111]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "admin block", "type": "building" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [74.89848,12.91094],[74.89848,12.91104],[74.89858,12.91104],[74.89858,12.91094],[74.89848,12.91094]
+        ]]
+      }
+    }
+  ]
+}

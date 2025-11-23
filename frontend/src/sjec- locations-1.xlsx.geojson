@@ -1,0 +1,105 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [74.899163, 12.910697] },
+      "properties": { "WKT": "POINT (74.899163 12.910697)", "areaName": "library" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [74.898551, 12.910987] },
+      "properties": { "WKT": "POINT (74.898551 12.910987)", "areaName": "admin block" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [74.899349, 12.9114086] },
+      "properties": { "WKT": "POINT (74.899349 12.9114086)", "areaName": "amphi" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [74.8995196, 12.9111246] },
+      "properties": { "WKT": "POINT (74.8995196 12.9111246)", "areaName": "cafe" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [74.89748, 12.910627] },
+      "properties": { "WKT": "POINT (74.89748 12.910627)", "areaName": "canteen" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [74.8992186, 12.9108962] },
+      "properties": { "WKT": "POINT (74.8992186 12.9108962)", "areaName": "kalam" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [74.899507, 12.910384] },
+      "properties": { "WKT": "POINT (74.899507 12.910384)", "areaName": "prerna" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [74.8995015, 12.9106207] },
+      "properties": { "WKT": "POINT (74.8995015 12.9106207)", "areaName": "spoorthi" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [74.898454, 12.910234] },
+      "properties": { "WKT": "POINT (74.898454 12.910234)", "areaName": "fr fred" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [74.898997, 12.910672] },
+      "properties": { "WKT": "POINT (74.898997 12.910672)", "areaName": "student sqaure" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [74.898788, 12.910869] },
+      "properties": { "WKT": "POINT (74.898788 12.910869)", "areaName": "T&P" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [74.899429, 12.909267] },
+      "properties": { "WKT": "POINT (74.899429 12.909267)", "areaName": "Girls hostel" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [74.8997574, 12.9110305] },
+      "properties": { "WKT": "POINT (74.8997574 12.9110305)", "areaName": "Boys hostel" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [74.898363, 12.910314] },
+      "properties": { "WKT": "POINT (74.898363 12.910314)", "areaName": "AB 1" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [74.899299, 12.910967] },
+      "properties": { "WKT": "POINT (74.899299 12.910967)", "areaName": "AB 2" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [74.899262, 12.910388] },
+      "properties": { "WKT": "POINT (74.899262 12.910388)", "areaName": "AB3" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [74.899521, 12.91093] },
+      "properties": { "WKT": "POINT (74.899521 12.91093)", "areaName": "Civil block" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [74.9, 12.910921] },
+      "properties": { "WKT": "POINT (74.9 12.910921)", "areaName": "Mech block" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [74.9006307, 12.9097436] },
+      "properties": { "WKT": "POINT (74.9006307 12.9097436)", "areaName": "College Ground" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [74.899094, 12.911315] },
+      "properties": { "WKT": "POINT (74.899094 12.911315)", "areaName": "Bethania" }
+    }
+  ]
+}
