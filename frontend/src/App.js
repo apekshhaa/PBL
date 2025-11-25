@@ -69,7 +69,7 @@ export default App;
 */
 
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 // import Background from "./components/Background";
 import Home from "./pages/Home";
@@ -77,8 +77,12 @@ import About from "./pages/About";
 import Results from "./pages/Results";
 import Coverage from "./pages/Coverage";
 import NetworkCoverage from "./pages/NetworkCoverage";
+import Login from "./pages/Login";
 
 function App() {
+  const location = useLocation();
+  const hideNavbar = location.pathname === "/"; // hide navbar on login
+
   return (
     <div
       style={{
@@ -92,10 +96,11 @@ function App() {
       }}
     >
       {/* <Background /> */}
-      <Navbar />
-      <div style={{ flex: 1, paddingTop: "80px" }}>
+      {!hideNavbar && <Navbar />}
+      <div style={{ flex: 1, paddingTop: hideNavbar ? 0 : "80px" }}>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Login />} />
+          <Route path="/home" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/results" element={<Results />} />
           <Route path="/coverage" element={<Coverage />} />
