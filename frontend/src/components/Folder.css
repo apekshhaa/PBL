@@ -6,6 +6,7 @@
   --paper-3: #ffffff;
 }
 
+/* Folder container */
 .folder {
   transition: all 0.2s ease-in;
   cursor: pointer;
@@ -16,6 +17,7 @@
   transform: translateY(-6px);
 }
 
+/* BACK part of folder */
 .folder__back {
   position: relative;
   width: 140px;
@@ -36,6 +38,7 @@
   border-radius: 5px 5px 0 0;
 }
 
+/* PAPER CARDS */
 .paper {
   position: absolute;
   z-index: 2;
@@ -46,6 +49,10 @@
   height: 80%;
   background: var(--paper-1);
   border-radius: 10px;
+  overflow: hidden; /* IMPORTANT for image */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
   transition: all 0.3s ease-in-out;
 }
 
@@ -61,6 +68,7 @@
   height: 60%;
 }
 
+/* FRONT flap */
 .folder__front {
   position: absolute;
   z-index: 3;
@@ -76,6 +84,7 @@
   transform: translateY(-6px);
 }
 
+/* OPEN STATE animation */
 .folder.open .paper:nth-child(1) {
   transform: translate(-120%, -70%) rotateZ(-15deg);
 }
@@ -90,16 +99,33 @@
   height: 80%;
 }
 
+/* BUTTON inside each paper */
 .folder-item-btn {
-  background: transparent;
-  border: none;
-  font-weight: 700;
-  color: #1b0b3a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
   width: 100%;
   height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
   cursor: pointer;
 }
 
-.folder-item-btn:focus {
-  outline: 2px solid rgba(132,0,255,0.12);
+/* IMAGE inside paper */
+.folder-item-img {
+  width: 100%;
+  height: 60%;      /* <- REDUCED FROM 75% SO TEXT IS VISIBLE */
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+/* LABEL under image */
+.folder-item-label {
+  margin-top: 4px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  text-align: center;
+  color: #1b0b3a;
 }

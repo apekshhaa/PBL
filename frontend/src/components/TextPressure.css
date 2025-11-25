@@ -1,0 +1,28 @@
+:root{
+  --tp-color: #e6d9ff;
+}
+
+.text-pressure-title{
+  letter-spacing: 0.02em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  display: block;
+  line-height: 1;
+}
+
+/* make sure the inline spans don't wrap on small screens */
+.text-pressure-title span{ 
+  display:inline-block;
+  white-space:nowrap;
+}
+
+/* subtle responsive tweak */
+@media (max-width: 640px){
+  .text-pressure-title{ font-size: 20px !important; }
+}
+
+/* optional stroke style used when `stroke` prop true */
+.text-pressure-title.stroke span::after{
+  -webkit-text-stroke-width: 2px;
+}

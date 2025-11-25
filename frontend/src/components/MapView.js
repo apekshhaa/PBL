@@ -77,6 +77,7 @@ export default function MapView({ destination }) {
   const [status, setStatus] = useState("Ready");
   const [loading, setLoading] = useState(false);
   const [routeInfo, setRouteInfo] = useState(null);
+  const [instructions, setInstructions] = useState(null);
   const [localDestination, setLocalDestination] = useState(null); // {lat,lng,name}
   const [startLatLng, setStartLatLng] = useState(null); // L.LatLng or null
   const [selectingStart, setSelectingStart] = useState(false);
@@ -89,10 +90,16 @@ export default function MapView({ destination }) {
   const [showIndoorGraphMarkers, setShowIndoorGraphMarkers] = useState(false);
   const startMarkerRef = useRef(null);
   const destMarkerRef = useRef(null);
+  const geoWatchIdRef = useRef(null);
+  const lastKnownPositionRef = useRef(null);
+  const startManualRef = useRef(false);
+  const lastUpdateTimeRef = useRef(0);
+  const pendingUpdateTimeoutRef = useRef(null);
   const tileLayerRef = useRef({});
   const pathGraphRef = useRef(null); // graph built from campus path LineStrings
   const [directRoute, setDirectRoute] = useState(true);
   const [mapStyle, setMapStyle] = useState('satellite');
+  const [trackingEnabled, setTrackingEnabled] = useState(true);
 
   // Tile providers map — satellite (Esri) and street (OSM)
   const tileProviders = {
@@ -308,6 +315,22 @@ export default function MapView({ destination }) {
     return L.latLng(cy, cx);
   };
 
+  // compute distance in meters between two {lat,lng} objects using Haversine
+  const latLngDistanceMeters = (a, b) => {
+    if (!a || !b) return Infinity;
+    const toRad = (v) => v * Math.PI / 180;
+    const R = 6371000; // earth radius in meters
+    const dLat = toRad(b.lat - a.lat);
+    const dLon = toRad(b.lng - a.lng);
+    const lat1 = toRad(a.lat);
+    const lat2 = toRad(b.lat);
+    const sinDLat = Math.sin(dLat / 2);
+    const sinDLon = Math.sin(dLon / 2);
+    const aa = sinDLat * sinDLat + Math.cos(lat1) * Math.cos(lat2) * sinDLon * sinDLon;
+    const c = 2 * Math.atan2(Math.sqrt(aa), Math.sqrt(1 - aa));
+    return R * c;
+  };
+
   // Create a smooth curved polyline (quadratic Bezier) between two L.LatLngs.
   // curvature: scalar (0 = straight, ~0.1-0.4 gives a gentle curve)
   // steps: number of sample points along the curve
@@ -375,6 +398,25 @@ export default function MapView({ destination }) {
     return { curvature, steps: Math.min(160, Math.max(24, Math.round(80 * scale))) };
   };
 
+  const buildInstructions = ({ startInside, destInside, meters, minutes, destName }) => {
+    const parts = [];
+    if (startInside === false || destInside === false) {
+      parts.push("One or both locations are outside the campus boundary. Follow campus exit signs and main roads to reach public transport or parking. Consider using a vehicle for long distances.");
+    }
+    if (typeof meters === 'number' && meters > 2000) {
+      parts.push(`This route is ${(meters/1000).toFixed(2)} km (~${minutes} min). Consider taking a bike, shuttle, or other transport for comfort.`);
+    } else if (typeof meters === 'number' && meters > 800) {
+      parts.push(`This route is ${(meters/1000).toFixed(2)} km (~${minutes} min). It's a moderate walk.`);
+    }
+    if (parts.length === 0) return null;
+    return parts.join(' ');
+  };
+
+  // The main initialization effect uses many internal helper functions
+  // which are stable for this component instance. We intentionally
+  // disable exhaustive-deps for this large init effect to avoid
+  // re-running initialization on every render.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     // Initialize map once
     mapRef.current = L.map("map", { zoomControl: true }).setView([12.9103, 74.8998], 17);
@@ -685,6 +727,7 @@ export default function MapView({ destination }) {
       try {
         const latlng = e.latlng;
         setStartLatLng(latlng);
+        startManualRef.current = true;
         if (startMarkerRef.current) {
           try { mapRef.current.removeLayer(startMarkerRef.current); } catch (e) {}
         }
@@ -701,6 +744,93 @@ export default function MapView({ destination }) {
     };
   }, [selectingStart]);
 
+  // Manage geolocation watch: when user hasn't manually selected a start location,
+  // and when `trackingEnabled` is true, start a watchPosition so the start marker
+  // and route update as the user moves. Disabling `trackingEnabled` stops watching.
+  useEffect(() => {
+    const startGeoWatch = () => {
+      if (!('geolocation' in navigator)) return;
+      if (geoWatchIdRef.current) return;
+      try {
+        const id = navigator.geolocation.watchPosition((pos) => {
+          const lat = pos.coords.latitude; const lng = pos.coords.longitude;
+          const newPos = { lat, lng };
+          // movement threshold: only update when moved more than 3 meters
+          const prevPos = lastKnownPositionRef.current;
+          const movedMeters = prevPos ? latLngDistanceMeters(prevPos, newPos) : Infinity;
+          // always update stored last-known (for first ever reading we'll accept)
+          if (!prevPos || movedMeters >= 3) {
+            lastKnownPositionRef.current = newPos;
+            // only update app state if user has not manually set a start
+            if (!startManualRef.current) {
+              const doUpdate = () => {
+                const ll = L.latLng(lat, lng);
+                setStartLatLng(ll);
+                // update or create marker
+                try {
+                  if (startMarkerRef.current && mapRef.current) { mapRef.current.removeLayer(startMarkerRef.current); startMarkerRef.current = null; }
+                } catch (e) {}
+                try {
+                  startMarkerRef.current = L.marker(ll, { icon: L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/64/64113.png", iconSize: [35,35] }) }).addTo(mapRef.current).bindPopup('You are here');
+                } catch (e) { }
+                // nudge route recalculation
+                setRouteTick(t => t + 1);
+                lastUpdateTimeRef.current = Date.now();
+                pendingUpdateTimeoutRef.current = null;
+              };
+
+              const now = Date.now();
+              const last = lastUpdateTimeRef.current || 0;
+              const elapsed = now - last;
+              const minInterval = 3000; // 3 seconds
+              if (!last || elapsed >= minInterval) {
+                // immediate update
+                // clear any pending timeout
+                if (pendingUpdateTimeoutRef.current) { try { clearTimeout(pendingUpdateTimeoutRef.current); } catch (e) {} pendingUpdateTimeoutRef.current = null; }
+                doUpdate();
+              } else {
+                // schedule update at next allowed time
+                const wait = minInterval - elapsed;
+                if (pendingUpdateTimeoutRef.current) {
+                  // already scheduled
+                } else {
+                  pendingUpdateTimeoutRef.current = setTimeout(() => {
+                    // if manual start was chosen in the meantime, skip
+                    if (startManualRef.current) { pendingUpdateTimeoutRef.current = null; return; }
+                    doUpdate();
+                  }, wait);
+                }
+              }
+            }
+          }
+        }, (err) => {
+          // ignore watch errors silently
+        }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 });
+        geoWatchIdRef.current = id;
+      } catch (e) { }
+    };
+
+    const stopGeoWatch = () => {
+      try {
+        if (geoWatchIdRef.current && navigator.geolocation && navigator.geolocation.clearWatch) {
+          navigator.geolocation.clearWatch(geoWatchIdRef.current);
+        }
+      } catch (e) {}
+      geoWatchIdRef.current = null;
+      if (pendingUpdateTimeoutRef.current) {
+        try { clearTimeout(pendingUpdateTimeoutRef.current); } catch (e) {}
+        pendingUpdateTimeoutRef.current = null;
+      }
+    };
+
+    // Start watching when map is ready, tracking is enabled and user hasn't manually chosen a start
+    if (trackingEnabled && mapRef.current && !startManualRef.current && !startLatLng) startGeoWatch();
+    // Stop watching if tracking is disabled or user selects a manual start or explicitly sets startLatLng
+    if (!trackingEnabled || startManualRef.current || startLatLng) stopGeoWatch();
+
+    return () => stopGeoWatch();
+  }, [mapRef.current, startLatLng, trackingEnabled]);
+
   useEffect(() => {
     if ((!destination && !localDestination) || !mapRef.current) return;
 
@@ -716,12 +846,23 @@ export default function MapView({ destination }) {
         let userLatLng = null;
         if (startLatLng) {
           userLatLng = startLatLng;
+        } else if (lastKnownPositionRef.current) {
+          const p = lastKnownPositionRef.current;
+          userLatLng = L.latLng(p.lat, p.lng);
         } else {
-          const pos = await new Promise((resolve, reject) =>
-            navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000 })
-          );
-          if (cancelled) return;
-          userLatLng = L.latLng(pos.coords.latitude, pos.coords.longitude);
+          // final fallback: request a one-off position
+          try {
+            const pos = await new Promise((resolve, reject) =>
+              navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000 })
+            );
+            if (cancelled) return;
+            userLatLng = L.latLng(pos.coords.latitude, pos.coords.longitude);
+          } catch (e) {
+            // geolocation failed; inform user and abort routing
+            setStatus('Unable to determine current location');
+            setLoading(false);
+            return;
+          }
         }
 
         setStatus("Adding your marker...");
@@ -857,7 +998,9 @@ export default function MapView({ destination }) {
                         indoorRouteLayerRef.current = L.polyline(latlngs, { color: '#007bff', weight: 5, opacity: 0.95 }).addTo(mapRef.current);
                         try { mapRef.current.fitBounds(indoorRouteLayerRef.current.getBounds(), { padding: [40,40] }); } catch(e){}
                         let meters = 0; for (let i = 0; i < latlngs.length - 1; i++) meters += mapRef.current.distance(latlngs[i], latlngs[i+1]);
-                        setRouteInfo({ distanceKm: (meters/1000).toFixed(2), minutes: Math.round((meters/1.4)/60) });
+                          const minutes = Math.round((meters/1.4)/60);
+                          setRouteInfo({ distanceKm: (meters/1000).toFixed(2), minutes });
+                          setInstructions(buildInstructions({ startInside, destInside, meters, minutes, destName: destName }));
                         setStatus('Routed along campus paths');
                         didIndoor = true; usedPath = true;
                       }
@@ -891,8 +1034,10 @@ export default function MapView({ destination }) {
                           indoorRouteLayerRef.current = L.polyline(latlngs, { color: '#007bff', weight: 5, opacity: 0.95 }).addTo(mapRef.current);
                           try { mapRef.current.fitBounds(indoorRouteLayerRef.current.getBounds(), { padding: [40,40] }); } catch(e){}
                           let meters = 0; for (let i = 0; i < latlngs.length - 1; i++) meters += mapRef.current.distance(latlngs[i], latlngs[i+1]);
-                          setRouteInfo({ distanceKm: (meters/1000).toFixed(2), minutes: Math.round((meters/1.4)/60) });
-                          setStatus('Routed via campus visibility graph');
+                            const minutes = Math.round((meters/1.4)/60);
+                            setRouteInfo({ distanceKm: (meters/1000).toFixed(2), minutes });
+                            setInstructions(buildInstructions({ startInside, destInside, meters, minutes, destName: (localDestination && localDestination.name) || destination }));
+                            setStatus('Routed via campus visibility graph');
                           didIndoor = true; usedPath = true;
                         }
                       }
@@ -913,7 +1058,9 @@ export default function MapView({ destination }) {
                   indoorRouteLayerRef.current = L.polyline(curve, { color: '#007bff', weight: 4, opacity: 0.9 }).addTo(mapRef.current);
                   try { mapRef.current.fitBounds(indoorRouteLayerRef.current.getBounds(), { padding: [40,40] }); } catch(e){}
                   let meters = 0; for (let i = 0; i < curve.length - 1; i++) meters += mapRef.current.distance(curve[i], curve[i+1]);
-                  setRouteInfo({ distanceKm: (meters/1000).toFixed(2), minutes: Math.round((meters/1.4)/60) });
+                  const minutes = Math.round((meters/1.4)/60);
+                  setRouteInfo({ distanceKm: (meters/1000).toFixed(2), minutes });
+                  setInstructions(buildInstructions({ startInside, destInside, meters, minutes, destName: (localDestination && localDestination.name) || destination }));
                   setStatus('Campus-constrained curved straight route');
                 } else {
                   const centroid = polygonCentroid(poly);
@@ -930,8 +1077,10 @@ export default function MapView({ destination }) {
                     indoorRouteLayerRef.current = L.polyline(latlngs, { color: '#007bff', weight: 4, opacity: 0.9, dashArray: '4,6' }).addTo(mapRef.current);
                     try { mapRef.current.fitBounds(indoorRouteLayerRef.current.getBounds(), { padding: [40,40] }); } catch(e){}
                     let meters = 0; for (let i = 0; i < latlngs.length - 1; i++) meters += mapRef.current.distance(latlngs[i], latlngs[i+1]);
-                    setRouteInfo({ distanceKm: (meters/1000).toFixed(2), minutes: Math.round((meters/1.4)/60) });
-                    setStatus('Campus-constrained centroid curved route');
+                      const minutes = Math.round((meters/1.4)/60);
+                      setRouteInfo({ distanceKm: (meters/1000).toFixed(2), minutes });
+                      setInstructions(buildInstructions({ startInside, destInside, meters, minutes, destName: (localDestination && localDestination.name) || destination }));
+                      setStatus('Campus-constrained centroid curved route');
                   }
                 }
                 didIndoor = true;
@@ -949,9 +1098,14 @@ export default function MapView({ destination }) {
             // compute polyline length along the curve for display
             let meters = 0;
             for (let i = 0; i < latlngs.length - 1; i++) meters += mapRef.current.distance(latlngs[i], latlngs[i+1]);
-            const km = (meters/1000).toFixed(2);
-            const mins = Math.round((meters/1.4) / 60); // walking speed ~1.4 m/s
-            setRouteInfo({ distanceKm: km, minutes: mins });
+            const minutes = Math.round((meters/1.4) / 60); // walking speed ~1.4 m/s
+            setRouteInfo({ distanceKm: (meters/1000).toFixed(2), minutes });
+            try {
+              const poly = tileLayerRef.current && tileLayerRef.current.campusPolygon;
+              const sInside = poly && pointInPolygon(userLatLng, poly);
+              const dInside = poly && pointInPolygon(destLatLng, poly);
+              setInstructions(buildInstructions({ startInside: sInside, destInside: dInside, meters, minutes, destName: (localDestination && localDestination.name) || destination }));
+            } catch (e) { /* ignore */ }
             setStatus('Direct route drawn');
           } else {
             // fallback to outdoor (leaflet-routing-machine)
@@ -1019,13 +1173,20 @@ export default function MapView({ destination }) {
             } catch (err) { console.warn('Failed to draw chosen route', err); }
 
             // set route info (distance/time)
-            try {
-              const meters = best.summary && (best.summary.totalDistance || best.summary.total_distance) || 0;
-              const seconds = best.summary && (best.summary.totalTime || best.summary.total_time || best.summary.totalDuration) || 0;
-              const km = (meters / 1000).toFixed(2);
-              const mins = Math.round(seconds / 60);
-              setRouteInfo({ distanceKm: km, minutes: mins });
-            } catch (err) { }
+              try {
+                const meters = best.summary && (best.summary.totalDistance || best.summary.total_distance) || 0;
+                const seconds = best.summary && (best.summary.totalTime || best.summary.total_time || best.summary.totalDuration) || 0;
+                const km = (meters / 1000).toFixed(2);
+                const mins = Math.round(seconds / 60);
+                setRouteInfo({ distanceKm: km, minutes: mins });
+                // set instructions based on whether points are inside campus and distance
+                try {
+                  const poly = tileLayerRef.current && tileLayerRef.current.campusPolygon;
+                  const sInside = poly && pointInPolygon(userLatLng, poly);
+                  const dInside = poly && pointInPolygon(destLatLng, poly);
+                  setInstructions(buildInstructions({ startInside: sInside, destInside: dInside, meters, minutes: mins, destName: (localDestination && localDestination.name) || destination }));
+                } catch (e) {}
+              } catch (err) { }
 
             // remove campus boundary layer to hide that purple box (if desired)
             try {
@@ -1075,8 +1236,22 @@ export default function MapView({ destination }) {
 
         <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
           <button onClick={() => { setSelectingStart(true); setStatus('Select start: click on map'); }} style={{ padding: '6px 8px' }}>Select Start</button>
-          <button onClick={() => { setStartLatLng(null); if (startMarkerRef.current) { try { mapRef.current.removeLayer(startMarkerRef.current); } catch (e) {} startMarkerRef.current = null; } setStatus('Using device location'); }} style={{ padding: '6px 8px' }}>Use My Location</button>
-          <button onClick={() => { setLocalDestination(null); setStatus('Destination cleared'); }} style={{ padding: '6px 8px' }}>Clear Destination</button>
+          <button onClick={() => { setStartLatLng(null); startManualRef.current = false; if (startMarkerRef.current) { try { mapRef.current.removeLayer(startMarkerRef.current); } catch (e) {} startMarkerRef.current = null; } setStatus('Using device location'); }} style={{ padding: '6px 8px' }}>Use My Location</button>
+          <button onClick={() => {
+            // Clear the selected destination and any drawn route/markers
+            setLocalDestination(null);
+            setStatus('Destination cleared');
+            setRouteInfo(null);
+            setInstructions(null);
+            setRouteTick(t => t + 1);
+            try {
+              if (destMarkerRef.current && mapRef.current) { try { mapRef.current.removeLayer(destMarkerRef.current); } catch (e) {} destMarkerRef.current = null; }
+              if (routingControlRef.current && mapRef.current) { try { mapRef.current.removeControl(routingControlRef.current); } catch (e) {} routingControlRef.current = null; }
+              if (indoorRouteLayerRef.current && mapRef.current) { try { mapRef.current.removeLayer(indoorRouteLayerRef.current); } catch (e) {} indoorRouteLayerRef.current = null; }
+            } catch (e) {
+              console.warn('Clear destination cleanup failed', e);
+            }
+          }} style={{ padding: '6px 8px' }}>Clear Destination</button>
           <button onClick={() => {
             // Clear extra overlays: geojson markers, indoor graph markers, indoor polygon, campus/buildings layers
             try {
@@ -1108,6 +1283,31 @@ export default function MapView({ destination }) {
             </select>
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <input type="checkbox" checked={trackingEnabled} onChange={(e) => {
+              const enabled = e.target.checked;
+              setTrackingEnabled(enabled);
+              if (!enabled) {
+                // stop any active geolocation watch and clear pending timeout
+                try {
+                  if (geoWatchIdRef.current && navigator.geolocation && navigator.geolocation.clearWatch) {
+                    navigator.geolocation.clearWatch(geoWatchIdRef.current);
+                  }
+                } catch (err) { }
+                geoWatchIdRef.current = null;
+                if (pendingUpdateTimeoutRef.current) {
+                  try { clearTimeout(pendingUpdateTimeoutRef.current); } catch (e) { }
+                  pendingUpdateTimeoutRef.current = null;
+                }
+                setStatus('Tracking disabled');
+              } else {
+                setStatus('Tracking enabled');
+                // prompt a route recalculation so start marker updates if needed
+                setRouteTick(t => t + 1);
+              }
+            }} />
+            <span style={{ fontSize: 12 }}>Enable tracking</span>
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <input type="checkbox" checked={showGeojsonPaths} onChange={(e) => setShowGeojsonPaths(e.target.checked)} />
             <span style={{ fontSize: 12 }}>Show paths</span>
           </label>
@@ -1125,6 +1325,11 @@ export default function MapView({ destination }) {
         {routeInfo && (
           <div style={{ marginTop: 8, fontSize: 12, color: "#000" }}>
             <strong>Route:</strong> {routeInfo.distanceKm} km • {routeInfo.minutes} min
+          </div>
+        )}
+        {instructions && (
+          <div style={{ marginTop: 8, fontSize: 12, color: "#333", background: 'rgba(255,255,255,0.9)', padding: '8px', borderRadius: 6 }}>
+            <strong>Note:</strong> {instructions}
           </div>
         )}
       </div>

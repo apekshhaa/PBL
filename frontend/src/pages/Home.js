@@ -33,11 +33,15 @@ import FlowingMenu from "../components/FlowingMenu";
 // use local images from src/images for suggestion thumbnails
 import libImg from "../images/library.jpeg";
 import cafeImg from "../images/cafeteria.jpeg";
-import canteenImg from "../images/cafeteria.jpeg";
+import canteenImg from "../images/canteen.jpeg";
 import auditoriumImg from "../images/auditorium.jpeg";
 import adminImg from "../images/admin.jpeg";
+import prernaImg from "../images/prerna.jpeg";
+import spoorthiImg from "../images/spoorthi.jpeg";
+import kalamImg from "../images/kalam.jpeg";
 import ScrollFloat from "../components/ScrollFloat";
 import TextPressure from '../components/TextPressure';
+import FallingText from '../components/FallingText';
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import "../components/ScrollFloat.css";
@@ -55,7 +59,17 @@ function Home() {
     { text: 'Library', link: '/results', image: libImg },
     { text: 'Cafe', link: '/results', image: cafeImg },
     { text: 'Canteen', link: '/results', image: canteenImg },
-    { text: 'Auditorium', link: '/results', image: auditoriumImg, subItems: ['Prerna Hall', 'Spoorthi Hall', 'Kalam Auditorium', 'Fr Fred'] },
+    {
+      text: 'Auditorium',
+      link: '/results',
+      image: auditoriumImg,
+      subItems: [
+        { name: 'Prerna', image: prernaImg },
+        { name: 'Spoorthi', image: spoorthiImg },
+        { name: 'Kalam', image: kalamImg },
+        { name: 'Fr Fred', image: auditoriumImg }
+      ]
+    },
     { text: 'Admin Block', link: '/results', image: adminImg }
   ];
 
@@ -121,18 +135,33 @@ function Home() {
             </ScrollFloat> 
             
           </div> */}
-          <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-            <TextPressure
-              text="hello, where do u want to go today?"
-              fontFamily="Compressa VF"
-              fontUrl="https://res.cloudinary.com/dr6lvwubh/raw/upload/v1529908256/CompressaPRO-GX.woff2"
-              scale={true}
-              flex={true}
-              stroke={false}
-              textColor="#e6d9ff"
-              minFontSize={28}
-              className="home-heading-text"
-            />
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '100%', maxWidth: 920, transform: 'translateY(-20px)' }}>
+              <FallingText
+                text="WELCOME"
+                highlightWords={["WELCOME"]}
+                trigger="auto"
+                gravity={0.4}
+                fontSize="3rem"
+                backgroundColor="transparent"
+                fontFamily="Compressa VF"
+                fontUrl="https://res.cloudinary.com/dr6lvwubh/raw/upload/v1529908256/CompressaPRO-GX.woff2"
+                textColor="#e6d9ff"
+              />
+            </div>
+            <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+              <TextPressure
+                text="Where do u want to go today?"
+                fontFamily="Compressa VF"
+                fontUrl="https://res.cloudinary.com/dr6lvwubh/raw/upload/v1529908256/CompressaPRO-GX.woff2"
+                scale={true}
+                flex={true}
+                stroke={false}
+                textColor="#e6d9ff"
+                minFontSize={28}
+                className="home-heading-text"
+              />
+            </div>
           </div>
 
           {/* Search/chat moved to top */}
