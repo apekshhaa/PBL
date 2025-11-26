@@ -743,33 +743,57 @@ export default function MapView({ destination }) {
     };
   }, [selectingStart]);
 
-  // Live geolocation tracking removed: continuous watchPosition logic eliminated.
-    // Live geolocation tracking removed: continuous watchPosition logic eliminated.
+  // HIGH-ACCURACY GPS ONLY — NO SNAPPING, NO FALLBACKS, NO CACHING
   useEffect(() => {
     if (!mapRef.current) return;
 
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const here = L.latLng(lat, lng);
+    const requestAccurateGPS = () => {
+      return new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const { latitude, longitude, accuracy } = pos.coords;
 
-        lastKnownPositionRef.current = { lat, lng };
+            console.log("📡 Raw GPS:", latitude, longitude, "Accuracy:", accuracy);
+
+            // Reject inaccurate readings and retry
+            if (accuracy > 25) {
+              console.warn("⚠ Low accuracy (" + accuracy + "m), retrying...");
+              setTimeout(() => resolve(requestAccurateGPS()), 600);
+              return;
+            }
+
+            resolve({ latitude, longitude });
+          },
+          (err) => {
+            reject(err);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 8000,
+            maximumAge: 0,
+          }
+        );
+      });
+    };
+
+    (async () => {
+      try {
+        setStatus("Locating...");
+
+        const { latitude, longitude } = await requestAccurateGPS();
+
+        const here = L.latLng(latitude, longitude);
+
+        // Save real location
+        lastKnownPositionRef.current = { lat: latitude, lng: longitude };
         setStartLatLng(here);
-        console.log(
-  "%cRAW LOCATION FROM BROWSER:",
-  "color: yellow; background: black; padding: 3px;",
-  lat,
-  lng,
-  "accuracy:",
-  pos.coords.accuracy
-);
 
-
+        // Remove old start marker if any
         if (startMarkerRef.current) {
           try { mapRef.current.removeLayer(startMarkerRef.current); } catch {}
         }
 
+        // Add fresh marker
         startMarkerRef.current = L.marker(here, {
           icon: L.icon({
             iconUrl: "https://cdn-icons-png.flaticon.com/512/64/64113.png",
@@ -779,14 +803,13 @@ export default function MapView({ destination }) {
           .addTo(mapRef.current)
           .bindPopup("You are here");
 
-        setStatus("Current location detected");
-      },
-      (err) => {
-        console.warn("Geolocation failed:", err);
-        setStatus("Unable to get current location");
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+        setStatus("Accurate GPS location set");
+
+      } catch (err) {
+        console.error("GPS Error:", err);
+        setStatus("Unable to get accurate location");
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -1195,102 +1218,64 @@ export default function MapView({ destination }) {
         <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
           <button onClick={() => { setSelectingStart(true); setStatus('Select start: click on map'); }} style={{ padding: '6px 8px' }}>Select Start</button>
           <button onClick={async () => {
-            setStatus('Getting current location...');
+            // Fixed campus center location for consistency across all devices
+            const CAMPUS_CENTER = { lat: 12.9103, lng: 74.8998 };
+            const finalLatLng = L.latLng(CAMPUS_CENTER.lat, CAMPUS_CENTER.lng);
+            setStatus('Using campus center location');
+            lastKnownPositionRef.current = CAMPUS_CENTER;
+            startManualRef.current = false;
+
             try {
-                const pos = await new Promise((resolve, reject) =>
-                  navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000 })
-                );
-                const lat = pos.coords.latitude; const lng = pos.coords.longitude;
-                const accuracy = pos.coords.accuracy || null; // meters
-                // persist raw last-known for routing fallback (include accuracy)
-                lastKnownPositionRef.current = { lat, lng, accuracy };
-                startManualRef.current = false;
-
-                // If we have buildings geojson loaded, try to snap the user to the nearest building
-                let finalLatLng = L.latLng(lat, lng);
-                try {
-                  const buildings = tileLayerRef.current && tileLayerRef.current.buildingsGeojson;
-                  if (buildings && buildings.features && buildings.features.length) {
-                    let best = null; let bestMeters = Infinity;
-                    for (const ft of buildings.features) {
-                      if (!ft.geometry) continue;
-                      let bx = null, by = null; // lon, lat
-                      if (ft.geometry.type === 'Point') {
-                        bx = ft.geometry.coordinates[0]; by = ft.geometry.coordinates[1];
-                      } else if (ft.geometry.type === 'Polygon' && ft.geometry.coordinates && ft.geometry.coordinates[0]) {
-                        // simple centroid: average of outer ring
-                        const ring = ft.geometry.coordinates[0];
-                        let sx = 0, sy = 0, count = 0;
-                        for (const c of ring) { if (Array.isArray(c) && c.length >= 2) { sx += c[0]; sy += c[1]; count++; } }
-                        if (count) { bx = sx / count; by = sy / count; }
-                      } else if (ft.geometry.type === 'MultiPolygon' && ft.geometry.coordinates && ft.geometry.coordinates[0] && ft.geometry.coordinates[0][0]) {
-                        const ring = ft.geometry.coordinates[0][0]; let sx = 0, sy = 0, count = 0; for (const c of ring) { if (Array.isArray(c) && c.length >= 2) { sx += c[0]; sy += c[1]; count++; } } if (count) { bx = sx / count; by = sy / count; }
+              // Try to snap to the nearest named location from sjec-locations geojson
+              let snapName = null;
+              let bestMeters = Infinity;
+              let bestLocation = null;
+              // Note: We use mapp.geojson locations data loaded during init
+              // Check if we can access the rendered location points and snap to nearest
+              try {
+                const geoData = await fetch("/sjec- locations-1.xlsx.geojson");
+                if (geoData.ok) {
+                  const locations = await geoData.json();
+                  if (locations && locations.features && locations.features.length) {
+                    for (const feat of locations.features) {
+                      if (feat.geometry && feat.geometry.type === 'Point') {
+                        const coords = feat.geometry.coordinates;
+                        const locName = feat.properties && (feat.properties.areaName || feat.properties.name);
+                        const meters = latLngDistanceMeters(CAMPUS_CENTER, { lat: coords[1], lng: coords[0] });
+                        if (meters < bestMeters) {
+                          bestMeters = meters;
+                          bestLocation = { lat: coords[1], lng: coords[0], name: locName };
+                        }
                       }
-                      if (bx === null || by === null) continue;
-                      const meters = latLngDistanceMeters({ lat, lng }, { lat: by, lng: bx });
-                      if (meters < bestMeters) { bestMeters = meters; best = { feature: ft, meters, lon: bx, lat: by }; }
-                    }
-                    // snap logic: only snap when geolocation accuracy is reasonably good
-                    const SNAP_MAX = 60; // meters
-                    const accOk = (typeof accuracy === 'number') ? (accuracy <= SNAP_MAX) : true;
-                    if (best && bestMeters <= SNAP_MAX && accOk) {
-                      finalLatLng = L.latLng(best.lat, best.lon);
-                      console.log(
-  "%cSNAPPED TO BUILDING:",
-  "color: lime; background: black; padding: 3px;",
-  finalLatLng.lat,
-  finalLatLng.lng
-);
-
-                      const name = best.feature.properties && (best.feature.properties.name || best.feature.properties.areaName) || 'nearby building';
-                      setStatus(`Detected near ${name} — snapping to building center (accuracy ${accuracy ? Math.round(accuracy) + 'm' : 'unknown'})`);
-                    } else if (best && bestMeters <= SNAP_MAX && !accOk) {
-                      // close building but low accuracy: do not snap, inform user
-                      setStatus(`Close to ${best.feature.properties && (best.feature.properties.name || best.feature.properties.areaName) || 'a building'}, but location accuracy is low (${Math.round(accuracy)}m) — not snapping`);
                     }
                   }
-                } catch (e) {
-                  console.warn('Building snap failed', e);
                 }
+              } catch (e) { console.warn('Could not load named locations', e); }
 
-                setStartLatLng(finalLatLng);
-                try { if (startMarkerRef.current && mapRef.current) { mapRef.current.removeLayer(startMarkerRef.current); } } catch (e) {}
-                try {
-                  const popupParts = [`You are here`];
-                  if (accuracy) popupParts.push(`accuracy: ${Math.round(accuracy)} m`);
-                  // if snapped to a named building, show that
-                  try {
-                    const buildings = tileLayerRef.current && tileLayerRef.current.buildingsGeojson;
-                    if (buildings && buildings.features && buildings.features.length) {
-                      // find building at finalLatLng (by nearest centroid)
-                      let foundName = null;
-                      let best = null; let bestMeters = Infinity;
-                      for (const ft of buildings.features) {
-                        if (!ft.geometry) continue;
-                        let bx = null, by = null;
-                        if (ft.geometry.type === 'Point') { bx = ft.geometry.coordinates[0]; by = ft.geometry.coordinates[1]; }
-                        else if (ft.geometry.type === 'Polygon' && ft.geometry.coordinates && ft.geometry.coordinates[0]) {
-                          const ring = ft.geometry.coordinates[0]; let sx = 0, sy = 0, count = 0; for (const c of ring) { if (Array.isArray(c) && c.length >= 2) { sx += c[0]; sy += c[1]; count++; } } if (count) { bx = sx / count; by = sy / count; }
-                        } else if (ft.geometry.type === 'MultiPolygon' && ft.geometry.coordinates && ft.geometry.coordinates[0] && ft.geometry.coordinates[0][0]) { const ring = ft.geometry.coordinates[0][0]; let sx = 0, sy = 0, count = 0; for (const c of ring) { if (Array.isArray(c) && c.length >= 2) { sx += c[0]; sy += c[1]; count++; } } if (count) { bx = sx / count; by = sy / count; } }
-                        if (bx === null || by === null) continue;
-                        const meters = latLngDistanceMeters({ lat: finalLatLng.lat, lng: finalLatLng.lng }, { lat: by, lng: bx });
-                        if (meters < bestMeters) { bestMeters = meters; best = { ft, meters }; }
-                      }
-                      if (best && best.meters <= 60) foundName = best.ft.properties && (best.ft.properties.name || best.ft.properties.areaName);
-                      if (foundName) popupParts.push(`near: ${foundName}`);
-                    }
-                  } catch (e) {}
-                  startMarkerRef.current = L.marker(finalLatLng, { icon: L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/64/64113.png", iconSize: [35,35] }) }).addTo(mapRef.current).bindPopup(popupParts.join(' • '));
-                  try { startMarkerRef.current.openPopup(); } catch(e) {}
-                } catch (e) {}
-                // trigger a route recalculation
-                setRouteTick(t => t + 1);
+              // Snap to nearest named location if found, else use campus center
+              const snapLatLng = (bestLocation && bestMeters <= 30) ? L.latLng(bestLocation.lat, bestLocation.lng) : finalLatLng;
+              if (bestLocation && bestMeters <= 30) {
+                setStatus(`Starting at ${bestLocation.name} (campus center proxy)`);
+                snapName = bestLocation.name;
+              } else {
+                setStatus('Starting at campus center');
+              }
+
+              setStartLatLng(snapLatLng);
+              try { if (startMarkerRef.current && mapRef.current) { mapRef.current.removeLayer(startMarkerRef.current); } } catch (e) {}
+              try {
+                const popupParts = [`Start: Campus Center`];
+                if (snapName) popupParts.push(`Near: ${snapName}`);
+                startMarkerRef.current = L.marker(snapLatLng, { icon: L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/64/64113.png", iconSize: [35,35] }) }).addTo(mapRef.current).bindPopup(popupParts.join(' • '));
+                try { startMarkerRef.current.openPopup(); } catch(e) {}
+              } catch (e) {}
+              // trigger a route recalculation
+              setRouteTick(t => t + 1);
             } catch (err) {
-              console.error('Geolocation failed', err);
-              setStatus('Unable to get location');
-              try { alert('Unable to get current location: ' + (err && err.message ? err.message : 'unknown')); } catch(e) {}
+              console.error('Failed to set campus location', err);
+              setStatus('Error setting location');
             }
-          }} style={{ padding: '6px 8px' }}>Use My Location</button>
+          }} style={{ padding: '6px 8px' }}>Use Campus Center</button>
           <button onClick={() => {
             // Clear the selected destination and any drawn route/markers
             setLocalDestination(null);
