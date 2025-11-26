@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Login.css";
-
+import FloatingLines from '../components/FloatingLines';
 function Login() {
   const navigate = useNavigate();
   const [mode, setMode] = useState(null); // 'student' | 'visitor'
@@ -54,6 +54,21 @@ function Login() {
   return (
     <div className="login-root">
       <div className="login-background" />
+      {/* <div style={{ width: '100%', height: '600px', position: 'relative' }}> */}
+      <div className="floating-lines-fullscreen">
+
+        <FloatingLines
+          enabledWaves={['top', 'middle', 'bottom']}
+          // Array - specify line count per wave; Number - same count for all waves
+          lineCount={[10, 15, 20]}
+          // Array - specify line distance per wave; Number - same distance for all waves
+          lineDistance={[8, 6, 4]}
+          bendRadius={5.0}
+          bendStrength={-0.5}
+          interactive={true}
+          parallax={true}
+        />
+      </div>
       <div className="login-card">
         <h1 className="login-title">Welcome to Smart Campus</h1>
         <p className="login-sub">Choose how you'd like to sign in</p>
@@ -104,7 +119,7 @@ function Login() {
             <button type="submit" className="submit-btn">Enter Campus</button>
           </div>
 
-          <div className="help-text">You can change this later in profile.</div>
+          {/* <div className="help-text">You can change this later in profile.</div> */}
         </form>
       </div>
     </div>
