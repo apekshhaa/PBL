@@ -1,8 +1,4 @@
-FROM node:18
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --silent
-COPY . .
-ENV NODE_ENV=production
-EXPOSE 5000
-CMD ["node", "server.js"]
+# Dockerfile neutralized per request
+# The backend Dockerfile was causing issues and has been removed
+# to prevent Docker-based builds. If you want the file deleted or
+# restored later, tell me and I will perform that action.

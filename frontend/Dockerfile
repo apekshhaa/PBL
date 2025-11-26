@@ -1,13 +1,4 @@
-FROM node:18 AS build
-WORKDIR /app
-ARG REACT_APP_API_BASE
-ENV REACT_APP_API_BASE=${REACT_APP_API_BASE}
-COPY package*.json ./
-RUN npm ci --silent
-COPY . .
-RUN npm run build
-
-FROM nginx:stable-alpine
-COPY --from=build /app/build /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+# Dockerfile neutralized per request
+# The frontend Dockerfile was causing issues and has been removed
+# to prevent Docker-based builds. If you want the file deleted or
+# restored later, tell me and I will perform that action.
