@@ -99,7 +99,6 @@ export default function MapView({ destination }) {
   const pathGraphRef = useRef(null); // graph built from campus path LineStrings
   const [directRoute, setDirectRoute] = useState(true);
   const [mapStyle, setMapStyle] = useState('satellite');
-  const [trackingEnabled, setTrackingEnabled] = useState(true);
 
   // Tile providers map — satellite (Esri) and street (OSM)
   const tileProviders = {
@@ -744,92 +743,7 @@ export default function MapView({ destination }) {
     };
   }, [selectingStart]);
 
-  // Manage geolocation watch: when user hasn't manually selected a start location,
-  // and when `trackingEnabled` is true, start a watchPosition so the start marker
-  // and route update as the user moves. Disabling `trackingEnabled` stops watching.
-  useEffect(() => {
-    const startGeoWatch = () => {
-      if (!('geolocation' in navigator)) return;
-      if (geoWatchIdRef.current) return;
-      try {
-        const id = navigator.geolocation.watchPosition((pos) => {
-          const lat = pos.coords.latitude; const lng = pos.coords.longitude;
-          const newPos = { lat, lng };
-          // movement threshold: only update when moved more than 3 meters
-          const prevPos = lastKnownPositionRef.current;
-          const movedMeters = prevPos ? latLngDistanceMeters(prevPos, newPos) : Infinity;
-          // always update stored last-known (for first ever reading we'll accept)
-          if (!prevPos || movedMeters >= 3) {
-            lastKnownPositionRef.current = newPos;
-            // only update app state if user has not manually set a start
-            if (!startManualRef.current) {
-              const doUpdate = () => {
-                const ll = L.latLng(lat, lng);
-                setStartLatLng(ll);
-                // update or create marker
-                try {
-                  if (startMarkerRef.current && mapRef.current) { mapRef.current.removeLayer(startMarkerRef.current); startMarkerRef.current = null; }
-                } catch (e) {}
-                try {
-                  startMarkerRef.current = L.marker(ll, { icon: L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/64/64113.png", iconSize: [35,35] }) }).addTo(mapRef.current).bindPopup('You are here');
-                } catch (e) { }
-                // nudge route recalculation
-                setRouteTick(t => t + 1);
-                lastUpdateTimeRef.current = Date.now();
-                pendingUpdateTimeoutRef.current = null;
-              };
-
-              const now = Date.now();
-              const last = lastUpdateTimeRef.current || 0;
-              const elapsed = now - last;
-              const minInterval = 3000; // 3 seconds
-              if (!last || elapsed >= minInterval) {
-                // immediate update
-                // clear any pending timeout
-                if (pendingUpdateTimeoutRef.current) { try { clearTimeout(pendingUpdateTimeoutRef.current); } catch (e) {} pendingUpdateTimeoutRef.current = null; }
-                doUpdate();
-              } else {
-                // schedule update at next allowed time
-                const wait = minInterval - elapsed;
-                if (pendingUpdateTimeoutRef.current) {
-                  // already scheduled
-                } else {
-                  pendingUpdateTimeoutRef.current = setTimeout(() => {
-                    // if manual start was chosen in the meantime, skip
-                    if (startManualRef.current) { pendingUpdateTimeoutRef.current = null; return; }
-                    doUpdate();
-                  }, wait);
-                }
-              }
-            }
-          }
-        }, (err) => {
-          // ignore watch errors silently
-        }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 });
-        geoWatchIdRef.current = id;
-      } catch (e) { }
-    };
-
-    const stopGeoWatch = () => {
-      try {
-        if (geoWatchIdRef.current && navigator.geolocation && navigator.geolocation.clearWatch) {
-          navigator.geolocation.clearWatch(geoWatchIdRef.current);
-        }
-      } catch (e) {}
-      geoWatchIdRef.current = null;
-      if (pendingUpdateTimeoutRef.current) {
-        try { clearTimeout(pendingUpdateTimeoutRef.current); } catch (e) {}
-        pendingUpdateTimeoutRef.current = null;
-      }
-    };
-
-    // Start watching when map is ready, tracking is enabled and user hasn't manually chosen a start
-    if (trackingEnabled && mapRef.current && !startManualRef.current && !startLatLng) startGeoWatch();
-    // Stop watching if tracking is disabled or user selects a manual start or explicitly sets startLatLng
-    if (!trackingEnabled || startManualRef.current || startLatLng) stopGeoWatch();
-
-    return () => stopGeoWatch();
-  }, [mapRef.current, startLatLng, trackingEnabled]);
+  // Live geolocation tracking removed: continuous watchPosition logic eliminated.
 
   useEffect(() => {
     if ((!destination && !localDestination) || !mapRef.current) return;
@@ -1282,31 +1196,7 @@ export default function MapView({ destination }) {
               <option value="street">Street</option>
             </select>
           </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input type="checkbox" checked={trackingEnabled} onChange={(e) => {
-              const enabled = e.target.checked;
-              setTrackingEnabled(enabled);
-              if (!enabled) {
-                // stop any active geolocation watch and clear pending timeout
-                try {
-                  if (geoWatchIdRef.current && navigator.geolocation && navigator.geolocation.clearWatch) {
-                    navigator.geolocation.clearWatch(geoWatchIdRef.current);
-                  }
-                } catch (err) { }
-                geoWatchIdRef.current = null;
-                if (pendingUpdateTimeoutRef.current) {
-                  try { clearTimeout(pendingUpdateTimeoutRef.current); } catch (e) { }
-                  pendingUpdateTimeoutRef.current = null;
-                }
-                setStatus('Tracking disabled');
-              } else {
-                setStatus('Tracking enabled');
-                // prompt a route recalculation so start marker updates if needed
-                setRouteTick(t => t + 1);
-              }
-            }} />
-            <span style={{ fontSize: 12 }}>Enable tracking</span>
-          </label>
+          {/* Live tracking feature removed */}
           <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <input type="checkbox" checked={showGeojsonPaths} onChange={(e) => setShowGeojsonPaths(e.target.checked)} />
             <span style={{ fontSize: 12 }}>Show paths</span>
