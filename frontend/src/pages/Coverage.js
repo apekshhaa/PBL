@@ -8,22 +8,22 @@ function Coverage() {
   const [selectedPlace, setSelectedPlace] = useState(null);
 
   const coverageData = {
-    Library: { Airtel: "yellow", Jio: "yellow", BSNL: "green", Vi: "green" },
+    Library: { Airtel: "green", Jio: "yellow", BSNL: "red", Vi: "green" },
     Canteen: { Airtel: "yellow", Jio: "green", BSNL: "red", Vi: "yellow" },
-    Cafeteria: { Airtel: "green", Jio: "green", BSNL: "yellow", Vi: "red" },
-    Auditorium: { Airtel: "yellow", Jio: "red", BSNL: "red", Vi: "green" },
+    Cafeteria: { Airtel: "green", Jio: "green", BSNL: "yellow", Vi: "yellow" },
+    Auditorium: { Airtel: "yellow", Jio: "yellow", BSNL: "red", Vi: "green" },
     "Academic Block 1": { Airtel: "green", Jio: "green", BSNL: "yellow", Vi: "yellow" },
     "Academic Block 2": { Airtel: "yellow", Jio: "yellow", BSNL: "red", Vi: "green" },
-    "Academic Block 3": { Airtel: "green", Jio: "yellow", BSNL: "yellow", Vi: "yellow" },
+    "Academic Block 3": { Airtel: "yellow", Jio: "yellow", BSNL: "yellow", Vi: "yellow" },
 
     // NEW AREAS YOU ADDED
     "Prerna Hall": { Airtel: "red", Jio: "red", BSNL: "red", Vi: "red" },
-    "Spoorthi Hall": { Airtel: "green", Jio: "yellow", BSNL: "yellow", Vi: "green" },
+    "Spoorthi Hall": { Airtel: "green", Jio: "green", BSNL: "yellow", Vi: "yellow" },
     "Fr. Fred Hall": { Airtel: "green", Jio: "yellow", BSNL: "red", Vi: "green" },
-    "Student Square": { Airtel: "green", Jio: "green", BSNL: "yellow", Vi: "green" },
-    "Civil Block": { Airtel: "green", Jio: "yellow", BSNL: "red", Vi: "green" },
-    "Mechanical Block": { Airtel: "green", Jio: "yellow", BSNL: "red", Vi: "green" },
-    "Training & Placement": { Airtel: "green", Jio: "yellow", BSNL: "red", Vi: "green" },
+    "Student Square": { Airtel: "green", Jio: "green", BSNL: "green", Vi: "green" },
+    "Civil Block": { Airtel: "green", Jio: "yellow", BSNL: "red", Vi: "yellow" },
+    "Mechanical Block": { Airtel: "green", Jio: "green", BSNL: "red", Vi: "green" },
+    "Training & Placement": { Airtel: "yellow", Jio: "yellow", BSNL: "red", Vi: "yellow" },
   };
 
   const places = Object.keys(coverageData);
